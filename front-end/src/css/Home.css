@@ -1,0 +1,15 @@
+.fullHome {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+}
+
+.left-container,
+.right-container {
+  flex: 0.25;
+  border: 2px solid black;
+}
+
+.center-container {
+  flex: 0.5;
+}
