@@ -2,13 +2,44 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
-
-const bcrypt = require("bcrypt");
 const app = express();
+const http = require("http");
+const server = http.createServer(app);
+options = {
+  cors: true,
+  origins: ["http://127.0.0.1:3000"],
+};
+const socketIo = require("socket.io");
+const bcrypt = require("bcrypt");
+const io = socketIo(server, options);
 app.use(express.static("public"));
 app.use(express.json());
 app.set("port", 3001);
 app.use(cors());
+io.on("connection", (socket) => {
+  console.log("New client connected");
+  const changeStream = Channel.watch();
+  changeStream.on("change", function (change) {
+    console.log("User COLLECTION CHANGED");
+    Channel.find({}, (err, data) => {
+      if (err) throw err;
+      if (data) {
+        // RESEND ALL USERS
+        socket.emit("new-message", data);
+      }
+    });
+  });
+});
+// socket.on("new-message-stored", (data) => {
+//   Channel.findOne({ _id: data }, (err, data) => {
+//     if (err) throw err;
+//     if (data) {
+//       console.log(data);
+//       socket.emit("new-message", data);
+//     }
+//   });
+// });
+
 mongoose
   .connect(
     "mongodb+srv://admin-Pentavalent:Nosotroscinco@cluster0.vuo1v.mongodb.net/Elan?retryWrites=true&w=majority",
@@ -38,6 +69,16 @@ var transporter = nodemailer.createTransport({
     ciphers: "SSLv3",
   },
 });
+const messageSchema = mongoose.Schema({
+  message: String,
+  name: String,
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+  received: Boolean,
+});
+const Message = new mongoose.model("Message", messageSchema);
 const channelSchema = new mongoose.Schema({
   channel_name: String,
   channel_theme: String,
@@ -45,8 +86,9 @@ const channelSchema = new mongoose.Schema({
   channel_users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   channel_admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   channel_desc: String,
+  channel_images: [],
   private: Boolean,
-  channel_message: String,
+  channel_message: [messageSchema],
 });
 const Channel = new mongoose.model("Channel", channelSchema);
 const userSchema = new mongoose.Schema({
@@ -66,6 +108,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Headers", "*");
   next();
 });
+
 // function createAdmin(email, password, req, res) {
 //   console.log("Vandhutten");
 //   const user = new User({
@@ -140,17 +183,21 @@ app.post("/new-channel", (req, res) => {
     channel_code: random,
     private: req.body.private,
     channel_admin: req.body.user_id,
+    channel_images: req.body.images,
   });
+  console.log(channel.channel_images);
+  channel.channel_users.push(req.body.user_id);
   channel.save(function (err) {
     if (err) console.log("Error in adding new item");
     else {
-      User.findOne({ _id: req.body.user_id })
-        .populate("channels")
-        .exec(function (err, user) {
-          if (err) console.log("Error in finding user id from user");
-          else user.channels.push(channel._id);
-        });
-      res.send("saved");
+      User.findOne({ _id: req.body.user_id }, (err, user) => {
+        if (err) console.log("Error in finding user id from user");
+        else {
+          user.channels.push(channel._id);
+          user.save();
+          res.send("saved");
+        }
+      });
     }
   });
 });
@@ -293,6 +340,49 @@ app.post("/channels", (req, res) => {
   });
 });
 
+app.post("/channel-info", (req, res) => {
+  console.log(req.body);
+  Channel.findOne({ _id: req.body.id })
+    .select("-password -_id -__v -channels")
+    .populate("channel_users", "-password -_id -__v -channels")
+    .exec(function (err, found) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(found);
+      }
+    });
+});
+
+app.post("/all-channels", (req, res) => {
+  Channel.findOne({ _id: req.body.id })
+    .select("-password -_id -__v -channels")
+    .populate("channel_users", "-password -_id -__v -channels")
+    .exec(function (err, found) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(found);
+      }
+    });
+});
+app.post("/channel_newMessage", (req, res) => {
+  console.log(req.body);
+  Channel.findOne({ _id: req.body.id }, (err, foundChannel) => {
+    if (!err) {
+      if (foundChannel) {
+        console.log("Hello");
+        const message = {
+          message: req.body.message,
+          name: req.body.name,
+        };
+        foundChannel.channel_message.push(message);
+        foundChannel.save();
+        res.send("Save pannite");
+      }
+    }
+  });
+});
 app.post("/chat", (req, res) => {
   console.log(req.body);
   const email = req.body.email;
@@ -310,6 +400,6 @@ app.post("/chat", (req, res) => {
 app.get("/", (req, res) => {
   res.send("object");
 });
-app.listen(app.get("port"), function () {
+server.listen(app.get("port"), function () {
   console.log(`App started on port ${app.get("port")}`);
 });

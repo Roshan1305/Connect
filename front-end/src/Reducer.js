@@ -2,6 +2,7 @@ import axios from "./Axios.js";
 export const initialState = {
   user: null,
   channels: [],
+  clickedChannel: null,
 };
 
 export const reducer = (state, action) => {
@@ -21,6 +22,15 @@ export const reducer = (state, action) => {
         user: user,
       };
     }
+    case "LEFT_CHANNEL": {
+      var channel = action.channelId;
+      console.log(channel);
+      return {
+        ...state,
+        clickedChannel: channel,
+      };
+    }
+
     default:
       return state;
   }

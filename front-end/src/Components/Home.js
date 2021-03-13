@@ -4,6 +4,10 @@ import axios from "../Axios";
 import { useStateValue } from "../StateProvider";
 import LeftComponent from "./LeftComponent";
 import RightComponent from "./RightComponent";
+import CenterComponent from "./CenterComponent";
+import socketIOClient from "socket.io-client";
+
+const ENDPOINT = "http://localhost:3001";
 function Home() {
   const [{ channels, user }, dispatch] = useStateValue();
   const [userData, setuserData] = useState("");
@@ -13,12 +17,14 @@ function Home() {
 
   useEffect(() => {
     axios.post("/channels").then((res) => {
+      console.log(res.data);
       dispatch({
         type: "CHANNELS",
         channels: res.data,
       });
     });
   }, [x]);
+
   useEffect(() => {
     axios
       .post("/chat", {
@@ -42,9 +48,11 @@ function Home() {
         {/* {user?.channels?.map((channel) => (
 
         ))} */}
-        <LeftComponent user={user} />
+        <LeftComponent />
       </div>
-      <div className="center-container"></div>
+      <div className="center-container">
+        <CenterComponent />
+      </div>
       <div className="right-container">
         <RightComponent user={user} />
       </div>

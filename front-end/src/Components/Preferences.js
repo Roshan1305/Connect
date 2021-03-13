@@ -26,7 +26,11 @@ function Preferences() {
       }).then((res) => {
         count = count + 1;
         console.log(res);
-        if (count == length) history.push("/home");
+        if (count == length) {
+          if (res) {
+            history.push("/home");
+          }
+        }
       });
     });
     console.log(pref);

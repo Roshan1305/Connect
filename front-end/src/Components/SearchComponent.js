@@ -7,11 +7,20 @@ import { useStateValue } from "../StateProvider";
 import SearchUser from "./SearchUser";
 
 function SearchComponent() {
-  const [{ user, channels }, dispatch] = useStateValue();
+  const [{ user, channels, clickedChannel }, dispatch] = useStateValue();
+
   const [search, setSearch] = React.useState([]);
   const closeShowdown = () => {
     $(".formSearch").val(null);
     setSearch(null);
+  };
+
+  const handleClick = (channelId) => {
+    console.log(channelId);
+    dispatch({
+      type: "LEFT_CHANNEL",
+      channelId: channelId,
+    });
   };
   const searchUser = () => {
     var channelList = [];
@@ -48,15 +57,14 @@ function SearchComponent() {
           {$(".formSearch").val() !== "" ? (
             search.length !== 0 ? (
               search.map((searchedChannel) => {
-                if (searchedChannel.email !== user?.email)
-                  return (
-                    <div onClick={closeShowdown}>
-                      <SearchUser
-                        className="searchUser"
-                        channel={searchedChannel}
-                      />
-                    </div>
-                  );
+                return (
+                  <div onClick={() => handleClick(searchedChannel)}>
+                    <SearchUser
+                      className="searchUser"
+                      channel={searchedChannel}
+                    />
+                  </div>
+                );
               })
             ) : (
               <p className="searchUser" id="notFound">

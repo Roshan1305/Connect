@@ -5,6 +5,7 @@ import SignUp from "./Components/SignUp.js";
 import Verify from "./Components/Verify";
 import Home from "./Components/Home";
 import Form from "./Components/Form";
+
 import Login from "./Components/Login";
 import Preferences from "./Components/Preferences.js";
 function App() {
